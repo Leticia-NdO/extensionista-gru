@@ -73,6 +73,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 18px;
+  flex-wrap: nowrap;
 }
 
 .logo-flag {
@@ -224,7 +225,7 @@ html, body {
   padding-left: 22px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 520px) {
   .brand {
     flex-direction: column;
     align-items: flex-start;
