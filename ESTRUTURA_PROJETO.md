@@ -70,6 +70,9 @@ portal (index.html / materia.html / app.js)
 
 - [lambda-watcher/infra/main.tf](lambda-watcher/infra/main.tf)
   - `aws_lambda_function` (runtime `nodejs24.x`).
+  - `aws_scheduler_schedule` com cron `0 8,12,18 ? * MON-FRI *` e timezone `America/Sao_Paulo`.
+  - Role dedicada do Scheduler e permissao `lambda:InvokeFunction` para invocar a Lambda.
+  - `aws_cloudwatch_log_group` com retencao de 30 dias para os logs da funcao.
   - IAM com permissao de `s3:PutObject`, `s3:GetObject`, `s3:ListBucket`.
   - Permissao basica de logs do Lambda.
 
@@ -262,6 +265,7 @@ portal/
 
 - As Lambdas usam `nodejs24.x` e sao empacotadas a partir de `lambda/dist` (ver `infra/main.tf`).
 - A `lambda-news-producer` usa `Secrets Manager` para a chave da OpenAI.
+- A `lambda-watcher` e acionada automaticamente pelo EventBridge Scheduler em horarios comerciais, com idempotencia baseada na verificacao previa do objeto no S3.
 - A `lambda-polls-manager` depende de acesso ao DynamoDB para atualizacoes atomicas.
 - O portal depende do `window.__API_BASE_URL__` apontando para o endpoint do API Gateway.
 - O portal usa `localStorage` para armazenar votos ja realizados e evitar duplicatas.
