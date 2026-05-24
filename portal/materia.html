@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portal Extensionista - Matéria</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Troque para o seu API Gateway, se necessário.
+      window.__API_BASE_URL__ = 'https://9zb6ymlxwk.execute-api.sa-east-1.amazonaws.com';
+    </script>
+    <script defer src="./app.js"></script>
+  </head>
+  <body data-page="materia">
+    <header class="header">
+      <div class="container">
+        <div class="row row-between">
+          <a class="link" href="./index.html">← Voltar ao feed</a>
+          <span class="pill" id="materiaId"></span>
+        </div>
+        <h1 class="title" id="title">Carregando...</h1>
+        <p class="subtitle" id="meta"></p>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+
+        <p class="summary" id="summary"></p>
+
+        <article id="content" class="content" aria-label="Conteúdo da matéria"></article>
+      </section>
+
+      <section class="card" id="pollCard" hidden>
+        <h2 class="section-title">Enquete</h2>
+        <p class="muted" id="pollQuestion"></p>
+        <div class="row" id="pollOptions"></div>
+        <p class="muted" id="pollHint"></p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <small>Conteúdo completo vem do S3 • Metadados do DynamoDB</small>
+      </div>
+    </footer>
+  </body>
+</html>

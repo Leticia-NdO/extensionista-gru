@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portal Extensionista - Feed</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      // Troque para o seu API Gateway, se necessário.
+      window.__API_BASE_URL__ = 'https://9zb6ymlxwk.execute-api.sa-east-1.amazonaws.com';
+    </script>
+    <script defer src="./app.js"></script>
+  </head>
+  <body data-page="feed">
+    <header class="header">
+      <div class="container">
+        <h1 class="title">Portal Extensionista</h1>
+        <p class="subtitle">Feed de matérias</p>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <div class="row row-between">
+          <h2 class="section-title">Últimas publicações</h2>
+          <button id="refreshBtn" class="btn" type="button">Atualizar</button>
+        </div>
+
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+
+        <ul id="feedList" class="feed" aria-label="Lista de matérias"></ul>
+
+        <div class="row row-center">
+          <button id="loadMoreBtn" class="btn" type="button" hidden>Carregar mais</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <small>Hospedado no S3 • Consumindo API Gateway</small>
+      </div>
+    </footer>
+  </body>
+</html>

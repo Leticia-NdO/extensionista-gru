@@ -1,0 +1,26 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "esbuild src/app.ts --bundle --platform=node --target=node24 --outfile=dist/app.js --external:@aws-sdk/*"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1030.0",
+    "cheerio": "^1.2.0",
+    "dommatrix": "^0.1.1",
+    "openai": "^6.34.0",
+    "pdf-parse": "1.1.4"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.35",
+    "@types/node": "^18.19.130",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.9.3"
+  }
+}
