@@ -99,6 +99,7 @@ resource "aws_lambda_function" "this" {
       variables = {
         S3_BUCKET_NAME = var.s3_bucket_name
         DDB_TABLE_NAME = var.dynamodb_table_name
+        API_ORIGIN_SECRET = var.api_origin_secret
       }
     }
 }
@@ -108,7 +109,7 @@ resource "aws_apigatewayv2_api" "http_api" {
     protocol_type = "HTTP"
 
     cors_configuration {
-        allow_origins = ["*"]
+        allow_origins = [var.cors_allow_origin]
         allow_methods = ["GET", "POST", "OPTIONS"]
         allow_headers = ["content-type", "authorization"]
         max_age       = 3600
@@ -124,13 +125,13 @@ resource "aws_apigatewayv2_integration" "lambda" {
 
 resource "aws_apigatewayv2_route" "feed" {
     api_id    = aws_apigatewayv2_api.http_api.id
-    route_key = "GET /feed"
+    route_key = "GET /api/feed"
     target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
 resource "aws_apigatewayv2_route" "materia" {
     api_id    = aws_apigatewayv2_api.http_api.id
-    route_key = "GET /materias/{pk}"
+    route_key = "GET /api/materias/{pk}"
     target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 

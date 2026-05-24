@@ -22,3 +22,14 @@ variable "dynamodb_table_name" {
   type    = string
   default = "extensionista-materias"
 }
+
+variable "api_origin_secret" {
+  type      = string
+  sensitive = true
+  description = "Segredo esperado no header x-origin-secret enviado pelo CloudFront"
+}
+
+variable "cors_allow_origin" {
+  type        = string
+  description = "Origem permitida no CORS (ex: https://dxxxxx.cloudfront.net)"
+}

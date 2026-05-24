@@ -88,6 +88,8 @@ resource "aws_lambda_function" "this" {
     environment {
       variables = {
         DDB_TABLE_NAME = var.dynamodb_table_name
+        API_ORIGIN_SECRET = var.api_origin_secret
+        CORS_ALLOW_ORIGIN = var.cors_allow_origin
       }
     }
 }
@@ -101,7 +103,7 @@ resource "aws_apigatewayv2_integration" "polls_lambda" {
 
 resource "aws_apigatewayv2_route" "vote" {
     api_id    = data.terraform_remote_state.newsfeed.outputs.http_api_id
-    route_key = "POST /materias/{pk}/voto"
+    route_key = "POST /api/materias/{pk}/voto"
     target    = "integrations/${aws_apigatewayv2_integration.polls_lambda.id}"
 }
 

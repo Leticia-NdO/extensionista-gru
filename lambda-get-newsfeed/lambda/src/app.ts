@@ -5,6 +5,7 @@ import { Readable } from 'stream';
 
 const region = process.env.AWS_REGION || 'us-east-1';
 const tableName = process.env.DDB_TABLE_NAME || '';
+const apiOriginSecret = (process.env.API_ORIGIN_SECRET || '').trim();
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
@@ -38,6 +39,26 @@ function parseLimit(input: string | undefined): number {
 	const parsed = Number(input);
 	if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_LIMIT;
 	return Math.min(Math.floor(parsed), MAX_LIMIT);
+}
+
+function getHeader(event: any, name: string): string | undefined {
+	const headers = event?.headers || {};
+	if (headers[name]) return String(headers[name]);
+	const lower = name.toLowerCase();
+	if (headers[lower]) return String(headers[lower]);
+	const foundKey = Object.keys(headers).find((key) => key.toLowerCase() === lower);
+	return foundKey ? String(headers[foundKey]) : undefined;
+}
+
+function ensureOriginSecret(event: any): ApiResponse | null {
+	if (!apiOriginSecret) {
+		return json(500, { message: 'API_ORIGIN_SECRET não configurada.' });
+	}
+	const provided = getHeader(event, 'x-origin-secret');
+	if (provided !== apiOriginSecret) {
+		return json(403, { message: 'Acesso negado.' });
+	}
+	return null;
 }
 
 function encodeCursor(key: any): string {
@@ -242,9 +263,14 @@ async function getMateria(pk: string): Promise<ApiResponse> {
 
 export const handler = async (event: any = {}): Promise<ApiResponse> => {
 	try {
+		const guard = ensureOriginSecret(event);
+		if (guard) return guard;
+
 		const method = event?.requestContext?.http?.method || event?.httpMethod || 'GET';
 		const rawPath = event?.rawPath || event?.path || '/';
-		const path = rawPath.split('?')[0];
+		let path = rawPath.split('?')[0];
+		if (path === '/api') path = '/';
+		if (path.startsWith('/api/')) path = path.slice(4);
 
 		if (method === 'GET' && path === '/feed') {
 			return await listFeed(event?.queryStringParameters);

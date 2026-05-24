@@ -30,12 +30,15 @@ lambda-news-producer  --(JSON da materia)-->  S3: materias/materia-YYYYMMDD.json
           |
           v
 lambda-get-newsfeed  --(HTTP)--> API Gateway
-          |                          (GET /feed, GET /materias/{pk})
+          |                          (GET /api/feed, GET /api/materias/{pk})
           |
-          +--> lambda-polls-manager  (POST /materias/{pk}/voto)
+          +--> lambda-polls-manager  (POST /api/materias/{pk}/voto)
           |         |
           |         v
           |   DynamoDB: atualiza contadores de votos (ADD atomico)
+          |
+          v
+CloudFront (origins S3 + API, WAF rate-limit, header secreto)
           |
           v
 portal (index.html / materia.html / app.js)
@@ -120,19 +123,22 @@ portal (index.html / materia.html / app.js)
 **Principais arquivos**:
 
 - [lambda-get-newsfeed/lambda/src/app.ts](lambda-get-newsfeed/lambda/src/app.ts)
-  - `GET /feed`: lista materias usando o GSI1, com paginação por cursor.
-  - `GET /materias/{pk}`: faz Query por PK para recuperar METADATA e ENQUETE; retorna dados da materia + pergunta, opcoes e contadores de votos.
+  - `GET /api/feed`: lista materias usando o GSI1, com paginação por cursor.
+  - `GET /api/materias/{pk}`: faz Query por PK para recuperar METADATA e ENQUETE; retorna dados da materia + pergunta, opcoes e contadores de votos.
   - Normaliza PKs em formatos variados para `MATERIA#YYYYMMDD_001`.
+  - Valida o header `x-origin-secret` para aceitar somente requests vindos do CloudFront.
 
 **Variaveis de ambiente relevantes** (infra):
 
 - `S3_BUCKET_NAME`
 - `DDB_TABLE_NAME`
+- `API_ORIGIN_SECRET`
 
 **Infraestrutura (Terraform)**:
 
 - [lambda-get-newsfeed/infra/main.tf](lambda-get-newsfeed/infra/main.tf)
-  - `aws_apigatewayv2_api` (HTTP API) com rotas `/feed` e `/materias/{pk}`.
+  - `aws_apigatewayv2_api` (HTTP API) com rotas `/api/feed` e `/api/materias/{pk}`.
+  - CORS restrito ao dominio do CloudFront.
   - Integracao proxy para a Lambda.
   - IAM com permissoes de leitura no DynamoDB e no S3.
 
@@ -145,21 +151,24 @@ portal (index.html / materia.html / app.js)
 **Principais arquivos**:
 
 - [lambda-polls-manager/lambda/src/app.ts](lambda-polls-manager/lambda/src/app.ts)
-  - E acionada por requisição `POST /materias/{pk}/voto` vinda do API Gateway.
+  - E acionada por requisição `POST /api/materias/{pk}/voto` vinda do API Gateway.
   - Recebe o JSON com `{ opcao: 0 }` (indice da opcao escolhida).
   - Valida se a opcao existe na enquete.
   - Atualiza atomicamente o contador de votos usando `UpdateExpression: "ADD votos_opcao# :val"` no item `{ PK: pk, SK: 'ENQUETE' }`.
   - Retorna sucesso com o novo estado dos contadores.
+  - Valida o header `x-origin-secret` para aceitar somente requests vindos do CloudFront.
 
 **Variaveis de ambiente relevantes** (infra):
 
 - `DDB_TABLE_NAME`
+- `API_ORIGIN_SECRET`
+- `CORS_ALLOW_ORIGIN`
 
 **Infraestrutura (Terraform)**:
 
 - [lambda-polls-manager/infra/main.tf](lambda-polls-manager/infra/main.tf)
   - `aws_lambda_function` (runtime `nodejs24.x`).
-  - Integracao com API Gateway existente: nova rota `/materias/{pk}/voto` com metodo `POST`.
+  - Integracao com API Gateway existente: nova rota `/api/materias/{pk}/voto` com metodo `POST`.
   - Integracao *Lambda Proxy* apontando para esta funcao.
   - IAM com permissao de `dynamodb:UpdateItem` na tabela de materias.
   - Permissao `lambda:InvokeFunction` para o principal `apigateway.amazonaws.com`.
@@ -175,19 +184,19 @@ portal (index.html / materia.html / app.js)
 
 - [portal/index.html](portal/index.html)
   - Pagina do feed com botao de atualizar e carregar mais.
-  - Define `window.__API_BASE_URL__` com o endpoint do API Gateway.
+  - Define `window.__API_BASE_URL__` apontando para o dominio do CloudFront (`/api`).
 
 - [portal/materia.html](portal/materia.html)
   - Pagina da materia individual com area de conteudo.
   - Secao para exibir a enquete com opcoes de votacao (renderizada dinamicamente via app.js).
 
 - [portal/app.js](portal/app.js)
-  - Consome `GET /feed` e `GET /materias/{id}`.
+  - Consome `GET /api/feed` e `GET /api/materias/{id}`.
   - Renderiza a lista de materias e converte Markdown basico em HTML.
   - Paginação via `nextCursor`.
   - **Novo**: Renderiza a enquete com botoes de votacao e contadores visuais.
   - **Novo**: Implementa bloqueio de votacao duplicada via `localStorage.getItem('voto_' + pk)`.
-  - **Novo**: Envia `POST /materias/{pk}/voto` e desabilita interface apos sucesso.
+  - **Novo**: Envia `POST /api/materias/{pk}/voto` e desabilita interface apos sucesso.
 
 ## Modelo de dados
 
@@ -217,14 +226,14 @@ portal (index.html / materia.html / app.js)
 
 Baseados na Lambda `lambda-get-newsfeed` e `lambda-polls-manager`:
 
-- `GET /feed`
+- `GET /api/feed`
   - Query: `limit`, `cursor`
   - Retorno: lista de metadados e `nextCursor`.
 
-- `GET /materias/{pk}`
+- `GET /api/materias/{pk}`
   - Retorno: metadados METADATA + conteudo completo do S3 + dados da enquete (pergunta, opcoes, contadores).
 
-- `POST /materias/{pk}/voto`
+- `POST /api/materias/{pk}/voto`
   - Corpo: `{ opcao: 0 }`
   - Retorno: sucesso com novos contadores da enquete ou erro se opcao invalida.
   - Headers: `Content-Type: application/json`, CORS habilitado.
@@ -267,13 +276,16 @@ portal/
 - A `lambda-news-producer` usa `Secrets Manager` para a chave da OpenAI.
 - A `lambda-watcher` e acionada automaticamente pelo EventBridge Scheduler em horarios comerciais, com idempotencia baseada na verificacao previa do objeto no S3.
 - A `lambda-polls-manager` depende de acesso ao DynamoDB para atualizacoes atomicas.
-- O portal depende do `window.__API_BASE_URL__` apontando para o endpoint do API Gateway.
+- O portal depende do `window.__API_BASE_URL__` apontando para o dominio do CloudFront (`/api`).
+- O CloudFront adiciona o header `x-origin-secret` no origin da API; as Lambdas validam esse segredo via `API_ORIGIN_SECRET`.
+- O CORS do API Gateway deve permitir apenas o dominio do CloudFront (`CORS_ALLOW_ORIGIN`).
+- O WAF do CloudFront aplica rate limit de 3000/5min por IP para rotas `/api/*`.
 - O portal usa `localStorage` para armazenar votos ja realizados e evitar duplicatas.
 
 ## Fluxo de votacao (end-to-end)
 
-1. **Carregamento**: Portal faz `GET /materias/{pk}` e recebe pergunta, opcoes e contadores.
+1. **Carregamento**: Portal faz `GET /api/materias/{pk}` e recebe pergunta, opcoes e contadores.
 2. **Bloqueio local**: JavaScript verifica `localStorage.getItem('voto_' + pk)`; se existe, desabilita interface.
-3. **Votacao**: Usuario clica em opcao; JavaScript envia `POST /materias/{pk}/voto` com indice da opcao.
+3. **Votacao**: Usuario clica em opcao; JavaScript envia `POST /api/materias/{pk}/voto` com indice da opcao.
 4. **Atualizacao atomica**: Lambda atualiza `votos_opcao#` no DynamoDB usando ADD.
 5. **Confirmacao**: Apos sucesso, portal armazena em `localStorage` e desabilita botoes.

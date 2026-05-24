@@ -6,8 +6,8 @@
     <title>Portal Extensionista - Feed</title>
     <link rel="stylesheet" href="./styles.css" />
     <script>
-      // Troque para o seu API Gateway, se necessário.
-      window.__API_BASE_URL__ = 'https://9zb6ymlxwk.execute-api.sa-east-1.amazonaws.com';
+      // Usa o dominio do CloudFront atual como base da API.
+      window.__API_BASE_URL__ = window.location.origin + '/api';
     </script>
     <script defer src="./app.js"></script>
   </head>
