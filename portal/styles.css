@@ -1,19 +1,53 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;600;700&family=DM+Serif+Display&display=swap');
 
 :root {
-  --bg: #f4f1ea;
-  --surface: #fffaf2;
+  --bg: #eef2f6;
+  --surface: #f8fafc;
   --card: #ffffff;
-  --text: #1c1b19;
-  --muted: #5a554c;
-  --border: rgba(28, 27, 25, 0.12);
-  --btn: #1c1b19;
-  --btn-hover: #3a342a;
-  --accent: #2e7d5f;
-  --accent-soft: rgba(46, 125, 95, 0.12);
-  --shadow: 0 14px 30px rgba(20, 16, 10, 0.12);
+  --text: #0f172a;
+  --muted: #475569;
+  --border: rgba(15, 23, 42, 0.12);
+  --btn: #0f172a;
+  --btn-hover: #1e293b;
+  --accent: #0ea5e9;
+  --accent-soft: rgba(14, 165, 233, 0.12);
+  --shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
   --font-sans: 'Bricolage Grotesque', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-serif: 'DM Serif Display', 'Times New Roman', serif;
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --card: #1e293b;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --border: rgba(248, 250, 252, 0.12);
+  --btn: #f8fafc;
+  --btn-hover: #e2e8f0;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.15);
+  --shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .btn {
+  color: #0f172a;
+}
+
+[data-theme="dark"] .logo-flag {
+  background: #f8fafc;
+}
+
+[data-theme="dark"] html, 
+[data-theme="dark"] body {
+  background:
+    radial-gradient(1200px 700px at 15% 0%, rgba(56, 189, 248, 0.08), transparent 60%),
+    radial-gradient(900px 600px at 95% 10%, rgba(14, 165, 233, 0.08), transparent 55%),
+    var(--bg);
+}
+
+[data-theme="dark"] .header {
+  background: linear-gradient(120deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.6));
 }
 
 * { box-sizing: border-box; }
@@ -22,8 +56,8 @@ html, body {
   margin: 0;
   padding: 0;
   background:
-    radial-gradient(1200px 700px at 15% 0%, rgba(247, 216, 159, 0.35), transparent 60%),
-    radial-gradient(900px 600px at 95% 10%, rgba(82, 150, 118, 0.25), transparent 55%),
+    radial-gradient(1200px 700px at 15% 0%, rgba(186, 230, 253, 0.35), transparent 60%),
+    radial-gradient(900px 600px at 95% 10%, rgba(125, 211, 252, 0.25), transparent 55%),
     var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
@@ -35,10 +69,16 @@ html, body {
   margin: 0 auto;
 }
 
+.brand {
+  display: flex; /* Aligns children in a row */
+  gap: 30px;    /* Optional: adds space between children */
+}
+
+
 .header {
   padding: 28px 0 22px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.85), rgba(244, 241, 234, 0.6));
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.85), rgba(240, 244, 248, 0.6));
   backdrop-filter: blur(6px);
 }
 
@@ -77,7 +117,7 @@ html, body {
 }
 
 .logo-flag {
-  width: 96px;
+  width: 140px;
   height: auto;
   border-radius: 12px;
   border: 1px solid var(--border);

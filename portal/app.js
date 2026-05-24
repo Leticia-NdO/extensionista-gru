@@ -306,8 +306,32 @@
     }
   }
 
+  // ----- Tema -----
+  function initTheme() {
+    const root = document.documentElement;
+    const current = localStorage.getItem('theme');
+    
+    if (current === 'dark' || (!current && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.setAttribute('data-theme', 'light');
+    }
+
+    const btn = $('themeToggle');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        const newTheme = isDark ? 'light' : 'dark';
+        root.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+      });
+    }
+  }
+
   // ----- Bootstrap -----
   document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+
     const page = document.body?.dataset?.page;
     if (page === 'feed') {
       $('refreshBtn')?.addEventListener('click', () => loadFeed({ reset: true }));
