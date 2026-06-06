@@ -29,6 +29,10 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host_header" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
+data "aws_route53_zone" "selected" {
+  zone_id = var.zone_id
+}
+
 resource "aws_s3_bucket" "site" {
   bucket = var.bucket_name
 }
@@ -189,6 +193,8 @@ resource "aws_cloudfront_distribution" "site" {
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host_header.id
   }
 
+  aliases = [var.portal_domain]
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
@@ -196,10 +202,56 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn = aws_acm_certificate_validation.cert.certificate_arn
+    ssl_support_method  = "sni-only"
   }
 
   web_acl_id = aws_wafv2_web_acl.api_rate_limit.arn
+}
+
+resource "aws_acm_certificate" "cert" {
+  provider          = aws.us_east_1
+  domain_name       = var.portal_domain
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.cert.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = data.aws_route53_zone.selected.zone_id
+}
+
+resource "aws_acm_certificate_validation" "cert" {
+  provider                = aws.us_east_1
+  certificate_arn         = aws_acm_certificate.cert.arn
+  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+}
+
+resource "aws_route53_record" "site" {
+  zone_id = data.aws_route53_zone.selected.zone_id
+  name    = var.portal_domain
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
+    evaluate_target_health = false
+  }
 }
 
 output "bucket_name" {
@@ -217,3 +269,4 @@ output "cloudfront_domain_name" {
 output "cloudfront_distribution_id" {
   value = aws_cloudfront_distribution.site.id
 }
+

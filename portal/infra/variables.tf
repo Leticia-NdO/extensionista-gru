@@ -18,3 +18,14 @@ variable "api_origin_secret" {
   sensitive = true
   description = "Segredo compartilhado enviado pelo CloudFront ao origin da API"
 }
+
+variable "portal_domain" {
+  type        = string
+  description = "The custom domain name for the portal."
+  default     = "portal-extensionista-2026.com"
+}
+
+variable "zone_id" {
+  type        = string
+  description = "The Route 53 zone ID for the custom domain."
+}
